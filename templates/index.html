@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Detection System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: #ffffff;
+            width: 90%;
+            max-width: 600px;
+            height: 90%; /* Allow it to use most of the viewport height */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow-y: auto; /* Add scroll for overflow content */
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007BFF;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        textarea, input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #888;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Scam Detection System</h1>
+        
+        <div class="form-group">
+            <div class="section-title">Analyze Text</div>
+            <form method="POST" action="/analyze-text">
+                <label for="text-input">Enter Text:</label>
+                <textarea name="text" id="text-input" rows="4" placeholder="Type the text you want to analyze..." required></textarea>
+                <button type="submit">Analyze Text</button>
+            </form>
+        </div>
+        
+        <div class="form-group">
+            <div class="section-title">Analyze Image</div>
+            <form method="POST" action="/analyze-image" enctype="multipart/form-data">
+                <label for="image-upload">Upload an Image:</label>
+                <input type="file" name="image" id="image-upload" accept="image/*" required>
+                <button type="submit">Analyze Image</button>
+            </form>
+        </div>
+        
+        <div class="form-group">
+            <div class="section-title">Analyze PDF</div>
+            <form method="POST" action="/analyze-pdf" enctype="multipart/form-data">
+                <label for="pdf-upload">Upload a PDF:</label>
+                <input type="file" name="pdf" id="pdf-upload" accept="application/pdf" required>
+                <button type="submit">Analyze PDF</button>
+            </form>
+        </div>
+        
+        <div class="form-group">
+            <div class="section-title">Analyze Link</div>
+            <form method="POST" action="/analyze-link">
+                <label for="link-input">Enter a Link:</label>
+                <input type="text" name="link" id="link-input" placeholder="Paste the link here..." required>
+                <button type="submit">Analyze Link</button>
+            </form>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2024 Scam Detection System. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

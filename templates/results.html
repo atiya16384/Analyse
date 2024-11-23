@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Detection Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .gauge-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+        }
+
+        .gauge {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .gauge-cover {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            background-color: white;
+            border-radius: 50%;
+            top: 10%;
+            left: 10%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .gauge-score {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .result-label {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .extracted-text {
+            text-align: left;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
+        .scam-level {
+            margin-top: 15px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .scam-label {
+            color: red;
+        }
+
+        .not-scam-label {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Scam Detection Results</h2>
+        <div class="gauge-container">
+            <div class="gauge" id="gauge"></div>
+            <div class="gauge-cover">
+                <div class="gauge-score" id="gauge-score">%</div>
+            </div>
+        </div>
+        <div class="result-label">
+            <p><strong>Scam Score:</strong> <span id="scam-score"></span>%</p>
+            <p><strong>Risk Label:</strong> <span id="risk-label"></span></p>
+            <p><strong>Threat Level:</strong> <span id="threat-level"></span></p>
+        </div>
+        <div class="scam-level">
+            <p>Classification: <span id="model-label" class=""></span></p>
+        </div>
+        <div class="extracted-text">
+            <h3>Extracted Text:</h3>
+            <p>{{ input_text }}</p>
+        </div>
+        <a href="/" class="back-button">Back to Home</a>
+    </div>
+
+    <script>
+        // Get analysis data passed from Flask
+        const scamScore = parseInt("{{ analysis.get('heuristic_scam_score', analysis.get('scam_score', 0)) }}");
+        const riskLabel = "{{ analysis['risk_label'] | safe }}";
+        const threatLevel = "{{ analysis['threat_level'] | safe }}";
+        const modelLabel = "{{ analysis['model_label'] | safe }}";
+
+        // Update DOM elements
+        const gauge = document.getElementById('gauge');
+        const gaugeScore = document.getElementById('gauge-score');
+        const scamScoreElement = document.getElementById('scam-score');
+        const riskLabelElement = document.getElementById('risk-label');
+        const threatLevelElement = document.getElementById('threat-level');
+        const modelLabelElement = document.getElementById('model-label');
+
+        scamScoreElement.innerText = scamScore;
+        gaugeScore.innerText = `${scamScore}%`;
+        riskLabelElement.innerText = riskLabel;
+        threatLevelElement.innerText = threatLevel;
+
+        // Set the scam classification result
+        modelLabelElement.innerText = modelLabel === "scam" ? "Scam" : "Not Scam";
+        modelLabelElement.classList.add(modelLabel === "scam" ? "scam-label" : "not-scam-label");
+
+        // Adjust gauge dynamically based on scamScore
+        const greenEnd = (35 / 100) * 360;
+        const yellowEnd = (70 / 100) * 360;
+        const redEnd = 360;
+
+        const endDegree = (scamScore / 100) * 360;
+
+        // Set dynamic gradient colors for the gauge
+        let gaugeBackground = '';
+
+        if (scamScore <= 35) {
+            gaugeBackground = `conic-gradient(green 0deg ${endDegree}deg, #ddd ${endDegree}deg 360deg)`;
+        } else if (scamScore > 35 && scamScore <= 70) {
+            const yellowStart = greenEnd;
+            gaugeBackground = `conic-gradient(green 0deg ${greenEnd}deg, yellow ${yellowStart}deg ${endDegree}deg, #ddd ${endDegree}deg 360deg)`;
+        } else {
+            const redStart = yellowEnd;
+            gaugeBackground = `conic-gradient(green 0deg ${greenEnd}deg, yellow ${greenEnd}deg ${yellowEnd}deg, red ${redStart}deg ${endDegree}deg, #ddd ${endDegree}deg 360deg)`;
+        }
+
+        gauge.style.background = gaugeBackground;
+    </script>
+</body>
+</html>
