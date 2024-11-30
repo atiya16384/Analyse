@@ -5,6 +5,9 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import tokenizer_from_json
 import json
+import nltk
+nltk.data.path.append('./nltk_data')  # Path to your nltk_data directory
+
 
 # Load your trained scam detection model
 model = tf.keras.models.load_model("optimized_scam_detection_model.keras")
