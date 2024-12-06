@@ -1,4 +1,4 @@
-from tkinter import Image
+import traceback
 from tracemalloc import BaseFilter
 from flask import Flask, request, jsonify, render_template
 import re
@@ -6,7 +6,6 @@ from pdf2image import convert_from_path
 from pytesseract import image_to_string
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.preprocessing.text import tokenizer_from_jso
 import json
 from textblob import TextBlob
 import nltk
@@ -15,8 +14,13 @@ import magic  # To detect file MIME type
 import cv2
 import numpy as np
 import math 
-# Initialize Flask app
+import os
+from tensorflow.keras.preprocessing.text import tokenizer_from_json
+
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
+
 
 # Load your trained scam detection model
 model = tf.keras.models.load_model("optimized_scam_detection_model.keras")
@@ -24,7 +28,7 @@ model = tf.keras.models.load_model("optimized_scam_detection_model.keras")
 # Load the tokenizer
 with open("tokenizer_config.json", "r") as file:
     tokenizer_json = file.read()
-    tokenizer = tokenizer_from_jso(json.loads(tokenizer_json))
+    tokenizer = tokenizer_from_json(json.loads(tokenizer_json))
 
 # Define heuristics array with consolidated heuristics
 heuristics = {
@@ -107,7 +111,7 @@ def detect_text_and_domain_issues(text):
     # Check spelling and grammar
     for word in blob.words:
         if word.lower() != word.correct().lower():
-            errors += 1
+            errors += 7
             details.append(f"Misspelled word: {word}")
 
     # Extract domains/URLs from text
@@ -116,7 +120,7 @@ def detect_text_and_domain_issues(text):
     for domain in domains:
         # Suspicious TLDs
         if re.search(r'\.(xyz|info|buzz|click|top|online|icu|club|zip|ru|tk|ml|ga|cf|gq|pw)$', domain):
-            errors += 10  # Heavily penalize suspicious TLDs
+            errors += 5  # Heavily penalize suspicious TLDs
             details.append(f"Suspicious TLD detected: {domain}")
 
         # Subdomain-heavy domains
@@ -259,13 +263,13 @@ def analyze_text_with_model(text):
 
     # ML model prediction
     prediction = model.predict(padded_sequences)[0][0]
-    model_score = round(prediction * 100, 2)
+    model_score = float(round(prediction * 100, 2))
 
     # Heuristic-based analysis
     heuristic_score, heuristic_details = detect_text_and_domain_issues(text)
 
     # Combine scores
-    combined_score = max(model_score, heuristic_score)  # Use the higher score for final classification
+    combined_score = min(model_score, heuristic_score)  # Use the higher score for final classification
 
     # Override classification if heuristic score is high
     if combined_score > 70:
@@ -291,83 +295,107 @@ def analyze_text_with_model(text):
         "details": heuristic_details,
     }
 
-
 # Flask routes
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return jsonify({"message": "Welcome to the Scam Detection API!"})
 
 @app.route("/analyze-text", methods=["POST"])
 def analyze_text():
-    text = request.form.get("text", "")
-    if not text:
-        return render_template("error.html", message="No text provided!")
-    result = analyze_text_with_model(text)
-    return render_template("results.html", analysis=result, input_text=text)
+    try:
+        data = request.get_json()
+        text = data.get("text", "")
+        if not text:
+            return jsonify({"error": "No text provided!"}), 400
+        
+        print(f"Received text: {text}")  # Log received text
+        
+        # Call the analysis function
+        result = analyze_text_with_model(text)
+        
+        print(f"Analysis result: {result}")  # Log analysis result
+        
+        return jsonify({"input_text": text, "analysis": result})
+    except Exception as e:
+        print(f"Error in analyze_text: {e}")  # Log the error to the console
+        return jsonify({"error": "An error occurred during text analysis.", "details": str(e)}), 500
+
 
 @app.route("/analyze-image", methods=["POST"])
 def analyze_image():
-    file = request.files.get("image")
-    if not file:
-        return render_template("error.html", message="No image provided!")
     try:
-        # Save the uploaded file
+        file = request.files.get("image")
+        if not file:
+            return jsonify({"error": "No image provided!"}), 400
+
+        # Save the uploaded file temporarily
         temp_path = f"/tmp/{file.filename}"
         file.save(temp_path)
 
         # Detect file type
         file_type = magic.from_file(temp_path, mime=True)
-        print(f"Uploaded file type: {file_type}")
-
-        # Validate supported file types
         if file_type not in ["image/png", "image/jpeg", "image/bmp", "image/tiff"]:
-            return render_template("error.html", message="Unsupported image format! Supported formats: PNG, JPEG, BMP, TIFF.")
+            os.remove(temp_path)
+            return jsonify({"error": "Unsupported image format! Supported formats: PNG, JPEG, BMP, TIFF."}), 400
 
-        # Attempt to open the image
+        # Attempt to open and preprocess the image
         try:
-            img = Image.open(temp_path)
+            img = Image.open(temp_path).convert("L").filter(ImageFilter.SHARPEN)
         except UnidentifiedImageError:
-            return render_template("error.html", message="Cannot identify image file. Please upload a valid image!")
-
-        # Preprocess the image for OCR
-        img = img.convert("L").filter(ImageFilter.SHARPEN)
+            os.remove(temp_path)
+            return jsonify({"error": "Invalid image file!"}), 400
 
         # Extract text using pytesseract
         text = image_to_string(img)
+        os.remove(temp_path)  # Clean up the temporary file
+
         if not text.strip():
-            return render_template("error.html", message="No text detected in the image!")
+            return jsonify({"error": "No text detected in the image!"}), 400
 
-        # Analyze extracted text
+        # Call your analysis function
         result = analyze_text_with_model(text)
-        return render_template("results.html", analysis=result, input_text=text)
-
+        return jsonify({"input_text": text, "analysis": result})
     except Exception as e:
-        # Log exception for debugging
-        print(f"Error: {str(e)}")
-        return render_template("error.html", message=f"Error processing image: {str(e)}")
+        return jsonify({"error": "An error occurred during image analysis.", "details": traceback.format_exc()}), 500
 
 @app.route("/analyze-pdf", methods=["POST"])
 def analyze_pdf():
-    file = request.files.get("pdf")
-    if not file:
-        return render_template("error.html", message="No PDF provided!")
     try:
+        file = request.files.get("pdf")
+        if not file:
+            return jsonify({"error": "No PDF provided!"}), 400
+
+        # Save the uploaded file temporarily
         temp_path = f"/tmp/{file.filename}"
         file.save(temp_path)
+
+        # Convert PDF pages to images and extract text
         pages = convert_from_path(temp_path)
         text = ''.join(image_to_string(page) for page in pages)
+        os.remove(temp_path)  # Clean up the temporary file
+
+        if not text.strip():
+            return jsonify({"error": "No text detected in the PDF!"}), 400
+
+        # Call your analysis function
         result = analyze_text_with_model(text)
-        return render_template("results.html", analysis=result, input_text=text)
+        return jsonify({"input_text": text, "analysis": result})
     except Exception as e:
-        return render_template("error.html", message=f"Error processing PDF: {e}")
+        return jsonify({"error": "An error occurred during PDF analysis.", "details": traceback.format_exc()}), 500
 
 @app.route("/analyze-link", methods=["POST"])
 def analyze_link():
-    link = request.form.get("link", "")
-    if not link:
-        return render_template("error.html", message="No link provided!")
-    result = analyze_text_with_model(link)
-    return render_template("results.html", analysis=result, input_text=link)
+    try:
+        data = request.get_json()
+        link = data.get("link", "")
+        if not link:
+            return jsonify({"error": "No link provided!"}), 400
+
+        # Call your analysis function
+        result = analyze_text_with_model(link)
+        return jsonify({"input_link": link, "analysis": result})
+    except Exception as e:
+        return jsonify({"error": "An error occurred during link analysis.", "details": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "329278682133",
+    "project_id": "cyber-175cd",
+    "storage_bucket": "cyber-175cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329278682133:android:f1e2372c237b784c75ca1c",
+        "android_client_info": {
+          "package_name": "com.tisova.cyberapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA2nQZhJt1gehNJBQw7P_fsBEe-qlq7YA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
