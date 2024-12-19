@@ -1,0 +1,3 @@
+[41687:259:1218/023937.993229:WARNING:chrome_main_delegate.cc(672)] This is Chrome version 131.0.6778.140 (not a warning)
+[41687:259:1218/023938.275204:INFO:chrome_browser_cloud_management_controller.cc(196)] No machine level policy manager exists.
+[41687:259:1218/023939.089755:INFO:CONSOLE(155)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yi/r/pEcjaxUXVpF.js (155)

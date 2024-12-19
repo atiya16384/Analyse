@@ -368,5 +368,6 @@ def analyze_link():
     result = analyze_text_with_model(link)
     return render_template("results.html", analysis=result, input_text=link)
 
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

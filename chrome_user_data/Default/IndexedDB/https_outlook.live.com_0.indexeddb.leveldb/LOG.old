@@ -1,0 +1,26 @@
+2024/12/14-21:22:34.513 8307 Reusing MANIFEST /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_user_data/Default/IndexedDB/https_outlook.live.com_0.indexeddb.leveldb/MANIFEST-000001
+2024/12/14-21:22:34.514 8307 Recovering log #12
+2024/12/14-21:22:34.514 8307 Reusing old log /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_user_data/Default/IndexedDB/https_outlook.live.com_0.indexeddb.leveldb/000012.log 
+2024/12/14-21:22:34.514 8307 Delete type=2 #11
+2024/12/14-21:22:34.536 f703 Manual compaction at level-0 from '\x00\x07\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x08\x00\x00\x00' @ 0 : 0; will stop at (end)
+2024/12/14-21:22:35.641 8307 Level-0 table #17: started
+2024/12/14-21:22:35.649 8307 Level-0 table #17: 827 bytes OK
+2024/12/14-21:22:35.663 8307 Delete type=0 #12
+2024/12/14-21:22:35.663 8307 Manual compaction at level-0 from '\x00\x08\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x09\x00\x00\x00' @ 0 : 0; will stop at '\x00\x09\x00\x00\x05' @ 137 : 1
+2024/12/14-21:22:35.663 8307 Compacting 1@0 + 1@1 files
+2024/12/14-21:22:35.668 8307 Generated table #18@0: 17 keys, 478 bytes
+2024/12/14-21:22:35.668 8307 Compacted 1@0 + 1@1 files => 478 bytes
+2024/12/14-21:22:35.677 8307 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/12/14-21:22:35.677 8307 Delete type=2 #17
+2024/12/14-21:22:35.677 8307 Manual compaction at level-0 from '\x00\x09\x00\x00\x05' @ 137 : 1 .. '\x00\x09\x00\x00\x00' @ 0 : 0; will stop at (end)
+2024/12/14-21:22:35.678 8307 Level-0 table #20: started
+2024/12/14-21:22:35.681 8307 Level-0 table #20: 502 bytes OK
+2024/12/14-21:22:35.688 8307 Delete type=0 #16
+2024/12/14-21:22:35.688 8307 Delete type=2 #14
+2024/12/14-21:22:35.688 8307 Manual compaction at level-0 from '\x00\x09\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0a\x00\x00\x00' @ 0 : 0; will stop at '\x00\x09\x00\x00\x05' @ 163 : 0
+2024/12/14-21:22:35.688 8307 Compacting 1@0 + 1@1 files
+2024/12/14-21:22:35.695 8307 Generated table #21@0: 14 keys, 353 bytes
+2024/12/14-21:22:35.695 8307 Compacted 1@0 + 1@1 files => 353 bytes
+2024/12/14-21:22:35.704 8307 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/12/14-21:22:35.704 8307 Delete type=2 #20
+2024/12/14-21:22:35.704 8307 Manual compaction at level-0 from '\x00\x09\x00\x00\x05' @ 163 : 0 .. '\x00\x0a\x00\x00\x00' @ 0 : 0; will stop at (end)

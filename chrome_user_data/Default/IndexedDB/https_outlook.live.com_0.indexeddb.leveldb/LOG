@@ -1,0 +1,14 @@
+2024/12/14-21:23:56.591 8307 Reusing MANIFEST /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_user_data/Default/IndexedDB/https_outlook.live.com_0.indexeddb.leveldb/MANIFEST-000001
+2024/12/14-21:23:56.593 8307 Recovering log #19
+2024/12/14-21:23:56.593 8307 Reusing old log /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_user_data/Default/IndexedDB/https_outlook.live.com_0.indexeddb.leveldb/000019.log 
+2024/12/14-21:23:56.593 8307 Delete type=2 #18
+2024/12/14-21:23:56.615 f703 Level-0 table #24: started
+2024/12/14-21:23:56.630 f703 Level-0 table #24: 550 bytes OK
+2024/12/14-21:23:56.641 f703 Delete type=0 #19
+2024/12/14-21:23:56.642 8307 Manual compaction at level-0 from '\x00\x0a\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0b\x00\x00\x00' @ 0 : 0; will stop at '\x00\x0a\x00\x00\x05' @ 169 : 1
+2024/12/14-21:23:56.642 8307 Compacting 1@0 + 1@1 files
+2024/12/14-21:23:56.646 8307 Generated table #25@0: 14 keys, 360 bytes
+2024/12/14-21:23:56.646 8307 Compacted 1@0 + 1@1 files => 360 bytes
+2024/12/14-21:23:56.656 8307 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/12/14-21:23:56.658 8307 Delete type=2 #24
+2024/12/14-21:23:56.659 8307 Manual compaction at level-0 from '\x00\x0a\x00\x00\x05' @ 169 : 1 .. '\x00\x0b\x00\x00\x00' @ 0 : 0; will stop at (end)

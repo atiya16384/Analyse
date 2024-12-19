@@ -1,0 +1,8 @@
+2024/12/11-22:00:32.803 3c03 Reusing MANIFEST /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/User_Data/Default/Local Storage/leveldb/MANIFEST-000001
+2024/12/11-22:00:32.807 3c03 Recovering log #54
+2024/12/11-22:00:32.807 3c03 Level-0 table #57: started
+2024/12/11-22:00:32.826 3c03 Level-0 table #57: 115808 bytes OK
+2024/12/11-22:00:32.835 3c03 Delete type=0 #54
+2024/12/11-22:01:33.696 2b07 Level-0 table #60: started
+2024/12/11-22:01:33.703 2b07 Level-0 table #60: 52745 bytes OK
+2024/12/11-22:01:33.712 2b07 Delete type=0 #58

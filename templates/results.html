@@ -60,23 +60,23 @@
             font-size: 18px;
         }
 
-        .extracted-text {
-            text-align: left;
-            font-size: 14px;
-            color: #555;
+        .action-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
         }
 
-        .back-button {
+        .action-button {
             display: inline-block;
-            margin-top: 20px;
             padding: 10px 20px;
             background-color: #007BFF;
             color: white;
             text-decoration: none;
             border-radius: 5px;
+            text-align: center;
         }
 
-        .back-button:hover {
+        .action-button:hover {
             background-color: #0056b3;
         }
 
@@ -92,6 +92,20 @@
 
         .not-scam-label {
             color: green;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -112,10 +126,21 @@
         <div class="scam-level">
             <p>Classification: <span id="model-label" class=""></span></p>
         </div>
+        
+        <div class="action-buttons">
+            <a href="/scam-analysis?result={{ analysis | tojson }}&flow={{ request.path }}" class="action-button">
+                View Scam Analysis
+            </a>
+            <a href="/what-is-scam-score?flow={{ request.path }}&result={{ analysis | tojson }}" class="action-button">
+                What is Scam Score?
+            </a>
+        </div>
+            
         <div class="extracted-text">
             <h3>Extracted Text:</h3>
             <p>{{ input_text }}</p>
         </div>
+
         <a href="/" class="back-button">Back to Home</a>
     </div>
 

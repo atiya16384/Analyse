@@ -1,0 +1,21 @@
+2024/12/17-04:35:48.854 a403 Reusing MANIFEST /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_user_data/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2024/12/17-04:35:48.855 a403 Recovering log #456
+2024/12/17-04:35:48.878 a403 Reusing old log /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_user_data/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000456.log 
+2024/12/17-04:35:48.953 f303 Level-0 table #465: started
+2024/12/17-04:35:48.965 f303 Level-0 table #465: 538396 bytes OK
+2024/12/17-04:35:48.973 f303 Delete type=0 #456
+2024/12/17-04:35:48.981 a807 Manual compaction at level-0 from '\x00p\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00q\x00\x00\x00' @ 0 : 0; will stop at (end)
+2024/12/17-04:35:49.759 a403 Compacting 1@1 + 5@2 files
+2024/12/17-04:35:49.818 a403 Generated table #466@1: 28569 keys, 2182026 bytes
+2024/12/17-04:35:49.877 a403 Generated table #467@1: 18070 keys, 2171237 bytes
+2024/12/17-04:35:49.939 a403 Generated table #468@1: 69748 keys, 2210487 bytes
+2024/12/17-04:35:50.006 a403 Generated table #469@1: 113020 keys, 2264270 bytes
+2024/12/17-04:35:50.082 a403 Generated table #470@1: 103482 keys, 2062813 bytes
+2024/12/17-04:35:50.082 a403 Compacted 1@1 + 5@2 files => 10890833 bytes
+2024/12/17-04:35:50.090 a403 compacted to: files[ 0 0 5 0 0 0 0 ]
+2024/12/17-04:35:50.091 a403 Delete type=2 #459
+2024/12/17-04:35:50.091 a403 Delete type=2 #465
+2024/12/17-04:35:50.091 a403 Delete type=2 #458
+2024/12/17-04:35:50.091 a403 Delete type=2 #460
+2024/12/17-04:35:50.091 a403 Delete type=2 #461
+2024/12/17-04:35:50.091 a403 Delete type=2 #462

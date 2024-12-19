@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Score Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        .section {
+            margin-top: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007BFF;
+            margin-bottom: 10px;
+        }
+
+        .section-content {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .positive-indicator {
+            color: green;
+        }
+
+        .negative-indicator {
+            color: red;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Scam Score Analysis</h2>
+
+        <!-- Overview -->
+        <div class="section">
+            <div class="section-title">Overview</div>
+            <div class="section-content">
+                <p>Your scam score is calculated by analyzing the content using a combination of machine learning, heuristic evaluations, and positive indicators. Below is a detailed breakdown of how we arrived at the final score.</p>
+            </div>
+        </div>
+
+        <!-- Negative Indicators -->
+        <div class="section">
+            <div class="section-title negative-indicator">Negative Indicators</div>
+            <div class="section-content">
+                <p>The following issues increased your scam score:</p>
+                <ul>
+                    {% for warning in analysis.get('details', []) %}
+                    <li>{{ warning }}</li>
+                    {% else %}
+                    <li>No negative indicators were detected.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Positive Indicators -->
+        <div class="section">
+            <div class="section-title positive-indicator">Positive Indicators</div>
+            <div class="section-content">
+                <p>The following factors contributed to reducing your scam score:</p>
+                <ul>
+                    {% for positive in analysis.get('positive_details', []) %}
+                    <li>{{ positive }}</li>
+                    {% else %}
+                    <li>No positive indicators were detected.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Detailed Breakdown -->
+        <div class="section">
+            <div class="section-title">Detailed Breakdown</div>
+            <div class="section-content">
+                <p><strong>Machine Learning Analysis:</strong> Our AI model analyzed the text and detected patterns matching known scams, contributing {{ analysis.get('model_confidence', 0) }}% to the scam score.</p>
+                <p><strong>Heuristic Analysis:</strong> We evaluated keywords, domain structures, and suspicious patterns, adding {{ analysis.get('heuristic_scam_score', 0) }}% to the scam score.</p>
+                <p><strong>Positive Indicators:</strong> Legitimate signals like proper grammar, trusted domains, or lack of suspicious elements reduced the score by {{ analysis.get('positive_score', 0) }}%.</p>
+                <p><strong>Final Scam Score:</strong> {{ analysis.get('scam_score', 0) }}%</p>
+            </div>
+        </div>
+
+        <!-- Explanation -->
+        <div class="section">
+            <div class="section-title">What Does This Mean?</div>
+            <div class="section-content">
+                <p>A higher scam score indicates a greater likelihood that the content is fraudulent or malicious. We recommend exercising caution and reporting any suspicious activity if the score is high. A lower score suggests the content is likely safe, but vigilance is always encouraged.</p>
+            </div>
+        </div>
+
+        <!-- Back to Home -->
+        <a href="/analyze-text?result={{ analysis | tojson }}&input_text={{ input_text }}" class="back-button">Back to Results</a>
+
+    </div>
+</body>
+</html>
