@@ -51,8 +51,9 @@
         }
 
         .gauge-score {
-            font-size: 28px;
+            font-size: 3em; /* Dynamic size for better fitting */
             font-weight: bold;
+            word-break: break-word;
         }
 
         .result-label {
@@ -115,16 +116,24 @@
         <div class="gauge-container">
             <div class="gauge" id="gauge"></div>
             <div class="gauge-cover">
-                <div class="gauge-score" id="gauge-score">%</div>
+                <div class="gauge-score" id="gauge-score">{{ analysis.scam_score if analysis.scam_score is not none else 'N/A' }}%</div>
             </div>
         </div>
         <div class="result-label">
-            <p><strong>Scam Score:</strong> <span id="scam-score"></span>%</p>
-            <p><strong>Risk Label:</strong> <span id="risk-label"></span></p>
-            <p><strong>Threat Level:</strong> <span id="threat-level"></span></p>
+            <p>
+                <strong>Scam Score:</strong>
+                <span class="negative-indicator">
+                    {{ analysis.scam_score if analysis.scam_score is not none else 'N/A' }}%
+                </span>
+            </p>
+            
+            <p><strong>Risk Label:</strong> {{ analysis.risk_label if analysis.risk_label is not none else 'N/A' }}</p>
+            <p><strong>Threat Level:</strong> {{ analysis.threat_level if analysis.threat_level is not none else 'N/A' }}</p>
         </div>
         <div class="scam-level">
-            <p>Classification: <span id="model-label" class=""></span></p>
+            <p>Classification: <span class="{{ 'scam-label' if analysis.model_label == 'scam' else 'not-scam-label' }}">
+                {{ analysis.model_label if analysis.model_label is not none else 'N/A' }}
+            </span></p>
         </div>
         
         <div class="action-buttons">
@@ -145,50 +154,41 @@
     </div>
 
     <script>
-        // Get analysis data passed from Flask
-        const scamScore = parseInt("{{ analysis.get('heuristic_scam_score', analysis.get('scam_score', 0)) }}");
-        const riskLabel = "{{ analysis['risk_label'] | safe }}";
-        const threatLevel = "{{ analysis['threat_level'] | safe }}";
-        const modelLabel = "{{ analysis['model_label'] | safe }}";
+        // Fetch the scam score dynamically from Flask-rendered data
+        const scamScore = parseFloat("{{ analysis.scam_score if analysis.scam_score is not none else 0 }}");
 
-        // Update DOM elements
+        // Update gauge dynamically
         const gauge = document.getElementById('gauge');
         const gaugeScore = document.getElementById('gauge-score');
-        const scamScoreElement = document.getElementById('scam-score');
-        const riskLabelElement = document.getElementById('risk-label');
-        const threatLevelElement = document.getElementById('threat-level');
-        const modelLabelElement = document.getElementById('model-label');
 
-        scamScoreElement.innerText = scamScore;
-        gaugeScore.innerText = `${scamScore}%`;
-        riskLabelElement.innerText = riskLabel;
-        threatLevelElement.innerText = threatLevel;
-
-        // Set the scam classification result
-        modelLabelElement.innerText = modelLabel === "scam" ? "Scam" : "Not Scam";
-        modelLabelElement.classList.add(modelLabel === "scam" ? "scam-label" : "not-scam-label");
-
-        // Adjust gauge dynamically based on scamScore
-        const greenEnd = (35 / 100) * 360;
-        const yellowEnd = (70 / 100) * 360;
-        const redEnd = 360;
-
-        const endDegree = (scamScore / 100) * 360;
-
-        // Set dynamic gradient colors for the gauge
-        let gaugeBackground = '';
-
-        if (scamScore <= 35) {
-            gaugeBackground = `conic-gradient(green 0deg ${endDegree}deg, #ddd ${endDegree}deg 360deg)`;
-        } else if (scamScore > 35 && scamScore <= 70) {
-            const yellowStart = greenEnd;
-            gaugeBackground = `conic-gradient(green 0deg ${greenEnd}deg, yellow ${yellowStart}deg ${endDegree}deg, #ddd ${endDegree}deg 360deg)`;
-        } else {
-            const redStart = yellowEnd;
-            gaugeBackground = `conic-gradient(green 0deg ${greenEnd}deg, yellow ${greenEnd}deg ${yellowEnd}deg, red ${redStart}deg ${endDegree}deg, #ddd ${endDegree}deg 360deg)`;
+        // Ensure score text fits dynamically in the circle
+        if (scamScore > 99.99) {
+            gaugeScore.style.fontSize = "2.5em";
+        } else if (scamScore < 10) {
+            gaugeScore.style.fontSize = "3.5em";
         }
 
-        gauge.style.background = gaugeBackground;
+        // Set the gauge score text
+        gaugeScore.innerText = `${scamScore.toFixed(1)}%`;
+
+        // Calculate the end angle for the conic-gradient
+        const endDegree = (scamScore / 100) * 360;
+
+         // Define the gauge colors based on the scam score
+        let gaugeBackground;
+
+        if (scamScore <= 35) {
+            // Low risk - fully green circle
+            gaugeBackground = "green";
+        } else if (scamScore > 35 && scamScore <= 70) {
+            // Medium risk - fully yellow circle
+            gaugeBackground = "yellow";
+        } else {
+            // High risk - fully red circle
+            gaugeBackground = "red";
+        }
+            // Apply the background color to the gauge
+            gauge.style.background = gaugeBackground;
     </script>
 </body>
 </html>

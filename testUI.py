@@ -109,35 +109,35 @@ def detect_text_and_domain_issues(text):
     # Check spelling and grammar
     misspelled_words = [word for word in blob.words if word.lower() != word.correct().lower()]
     if not misspelled_words:
-        positive_score += 10
+        positive_score += 2  # Reduced impact
         positive_details.append("No spelling or grammar issues detected.")
     else:
         for word in misspelled_words:
-            errors += 1
+            errors += 10  # Increased impact of errors
             details.append(f"Misspelled word: {word}")
 
     # Extract domains/URLs from text
     domains = re.findall(r'\b(?:https?://)?(?:www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b', text)
 
     if not domains:
-        positive_score += 10
+        positive_score += 5  # Reduced impact
         positive_details.append("No suspicious domains or URLs detected.")
 
     for domain in domains:
         # Suspicious TLDs
         if re.search(r'\.(xyz|info|buzz|click|top|online|icu|club|zip|ru|tk|ml|ga|cf|gq|pw)$', domain):
-            errors += 10
+            errors += 15
             details.append(f"Suspicious TLD detected: {domain}")
         else:
-            positive_score += 5
+            positive_score += 5 # Further reduced impact
             positive_details.append(f"Legitimate-looking domain detected: {domain}")
 
         # Subdomain-heavy domains
         if len(domain.split('.')) > 3:
-            errors += 8
+            errors += 10
             details.append(f"Suspicious subdomain structure: {domain}")
         else:
-            positive_score += 3
+            positive_score += 5  # Minimal impact
             positive_details.append(f"Domain has a simple structure: {domain}")
 
         # Check for legitimate domain spoofing
@@ -146,44 +146,44 @@ def detect_text_and_domain_issues(text):
             errors += 15
             details.append(spoofing_issue)
         else:
-            positive_score += 5
+            positive_score += 5  # Minimal impact
             positive_details.append(f"No spoofing detected for domain: {domain}")
 
     # Check for IP-based domains
     ip_based_domains = [domain for domain in domains if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', domain)]
     if not ip_based_domains:
-        positive_score += 5
+        positive_score += 5  # Minimal impact
         positive_details.append("No IP-based domains detected.")
     else:
         for domain in ip_based_domains:
-            errors += 10
+            errors += 15
             details.append(f"IP-based domain detected: {domain}")
 
     # Check for absence of shortened URLs
     if not re.search(r'\b(bit\.ly|tinyurl|t\.co|goo\.gl|ow\.ly|is\.gd|rb\.gy)\b', text):
-        positive_score += 5
+        positive_score += 5  # Minimal impact
         positive_details.append("No shortened URLs detected.")
     else:
-        errors += 10
+        errors += 15
         details.append("Shortened URL detected.")
 
     # Check 'From' and 'Reply-To' headers
     headers = re.findall(r'From:.*?<(.*?)>', text)
     if not headers:
-        positive_score += 5
+        positive_score += 5  # Minimal impact
         positive_details.append("No suspicious 'From' or 'Reply-To' headers detected.")
     for header in headers:
         if not any(domain in header for domain in legitimate_domains):
             errors += 15
             details.append(f"Suspicious 'From' header: {header}")
         else:
-            positive_score += 5
+            positive_score += 1  # Minimal impact
             positive_details.append(f"Valid 'From' header detected: {header}")
 
     # Check for suspicious keywords
     keyword_density = sum(1 for keyword in scam_keywords if keyword.lower() in text.lower()) / (len(blob.words) + 1)
     if keyword_density < 0.05:
-        positive_score += 10
+        positive_score += 2  # Minimal impact
         positive_details.append("Low keyword density suggests legitimate content.")
     else:
         errors += int(keyword_density * 80)
@@ -191,7 +191,7 @@ def detect_text_and_domain_issues(text):
 
     # No phishing indicators
     if errors == 0:
-        positive_score += 20
+        positive_score += 2  # Minimal impact
         positive_details.append("No phishing indicators detected in text.")
 
     # Calculate overall score
@@ -200,7 +200,6 @@ def detect_text_and_domain_issues(text):
     score = int(min(error_ratio * 100, 100))  # Cap negative score at 100%
 
     return score, details, positive_score, positive_details
-
 
 # Function to check for legitimate domain spoofing
 def detect_legitimate_domain_spoofing(domain):
@@ -242,15 +241,20 @@ def calculate_combined_score(text, model_score):
     heuristic_score, heuristic_details, positive_score, positive_details = detect_text_and_domain_issues(text)
 
     # Assign higher weight to heuristics and keyword scores
-    weighted_ml_score = model_score * 0.05  # Reduce ML weight to 5%
-    remaining_weight = 1 - 0.05  # Allocate 95% to keyword and heuristic scores
+    weighted_ml_score = model_score * 0.2  # ML contributes 20%
+    remaining_weight = 1 - 0.2  # Allocate 80% to keyword and heuristic scores
 
     # Normalize keyword and heuristic scores
     keyword_weight = keyword_score / (keyword_score + heuristic_score) if (keyword_score + heuristic_score) > 0 else 0.5
     heuristic_weight = 1 - keyword_weight
 
+    # Limit the impact of positive indicators to at most 20% reduction
+    max_positive_impact = heuristic_score * 0.25 # Positive indicators can only reduce up to 20%
+    adjusted_heuristic_score = max(0, heuristic_score - min(positive_score, max_positive_impact))
+
+    # Calculate weighted scores
     weighted_keyword_score = keyword_score * remaining_weight * keyword_weight
-    weighted_heuristic_score = max(0, heuristic_score - positive_score) * remaining_weight * heuristic_weight  # Subtract positive score
+    weighted_heuristic_score = adjusted_heuristic_score * remaining_weight * heuristic_weight
 
     # Combine scores (capped at 100)
     total_score = min(weighted_ml_score + weighted_keyword_score + weighted_heuristic_score, 100)
@@ -266,18 +270,16 @@ def calculate_combined_score(text, model_score):
         threat_level = "Green"
         risk_label = "Low Risk"
 
+    print("DEBUG - Total Scam Score:", total_score)  # Check final scam score
     return {
         "scam_score": float(total_score),
         "threat_level": threat_level,
         "risk_label": risk_label,
-        "details": keyword_details + heuristic_details + positive_details,
+        "details": keyword_details + heuristic_details,
+        "positive_details": positive_details,
     }
 
-
 def analyze_text_with_model(text):
-    """
-    Analyze text using ML model, keywords, heuristics, and positive indicators.
-    """
     # Tokenize and pad input
     sequences = tokenizer.texts_to_sequences([text])
     padded_sequences = pad_sequences(sequences, maxlen=100, padding="post", truncating="post")
@@ -286,35 +288,27 @@ def analyze_text_with_model(text):
     prediction = model.predict(padded_sequences)[0][0]
     model_score = round(prediction * 100, 2)
 
-    # Heuristic-based analysis (includes positives)
-    heuristic_score, heuristic_details, positive_score, positive_details = detect_text_and_domain_issues(text)
-
     # Combine scores
-    combined_score = max(model_score, heuristic_score - positive_score)  # Subtract positive score
+    result = calculate_combined_score(text, model_score)
 
-    # Override classification if heuristic score is high
-    if combined_score > 70:
-        final_classification = "scam"
-        risk_label = "High Risk"
-        threat_level = "Red"
-    elif combined_score > 50:
-        final_classification = "potential scam"
-        risk_label = "Medium Risk"
-        threat_level = "Yellow"
-    else:
-        final_classification = "not scam"
-        risk_label = "Low Risk"
-        threat_level = "Green"
+    # Debugging output
+    print("DEBUG: Model Score:", model_score)
+    print("DEBUG: Combined Scam Score:", result.get("scam_score", 0))
+    print("DEBUG: Full Result Data:", result)
 
     return {
         "model_label": "scam" if model_score > 50 else "not scam",
         "model_confidence": model_score,
-        "scam_score": float(combined_score),
-        "threat_level": threat_level,
-        "risk_label": risk_label,
-        "classification": final_classification,
-        "details": heuristic_details + positive_details,
+        "scam_score": float(result.get("scam_score", 0)),
+        "heuristic_scam_score": float(result.get("heuristic_score", 0)),
+        "positive_score": float(result.get("positive_score", 0)),
+        "threat_level": result.get("threat_level", "Green"),
+        "risk_label": result.get("risk_label", "Low Risk"),
+        "classification": result.get("classification", "not scam"),
+        "details": result.get("details", []),
+        "positive_details": result.get("positive_details", []),
     }
+
 # Helper function to sanitize data
 def sanitize_analysis_data(data):
     if isinstance(data, dict):
@@ -330,6 +324,7 @@ def sanitize_analysis_data(data):
     else:
         return str(data)
 
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -341,8 +336,8 @@ def analyze_text():
         if not text:
             return render_template("error.html", message="No text provided!")
         
-        result = analyze_text_with_model(text)  # Replace with your model analysis function
-        result = sanitize_analysis_data(result)
+        result = analyze_text_with_model(text)  # Call the analysis function
+        result = sanitize_analysis_data(result)  # Ensure clean data is sent to the template
         return render_template("results.html", analysis=result, input_text=text)
     return render_template("error.html", message="Invalid request method for analyze-text.")
 
@@ -366,6 +361,7 @@ def analyze_image():
                 return render_template("error.html", message="No text detected in the image!")
 
             result = analyze_text_with_model(text)
+            print("DEBUG: Analysis Result Passed to Template:", result)  # Log analysis result
             result = sanitize_analysis_data(result)
             return render_template("results.html", analysis=result, input_text=text)
         except Exception as e:
@@ -409,8 +405,19 @@ def scam_analysis():
     try:
         analysis = json.loads(result_json)
         analysis = sanitize_analysis_data(analysis)
+        print("DEBUG: Analysis Data in Scam Analysis:", analysis)  # Check if scam_score exists here
     except json.JSONDecodeError:
-        analysis = {}
+        analysis = {
+            "scam_score": "N/A",
+            "heuristic_scam_score": "N/A",
+            "positive_score": "N/A",
+            "model_confidence": "N/A",
+            "threat_level": "Unknown",
+            "risk_label": "Unknown",
+            "classification": "Unknown",
+            "details": [],
+            "positive_details": []
+        }
     return render_template("scam_analysis.html", analysis=analysis, input_text=input_text, flow=flow)
 
 @app.route("/what-is-scam-score", methods=["GET"])
@@ -424,6 +431,21 @@ def what_is_scam_score():
     except json.JSONDecodeError:
         analysis = {}
     return render_template("what_is_scam_score.html", analysis=analysis, input_text=input_text, flow=flow)
+
+# @app.route("/results")
+# def results():
+#     result_json = request.args.get("result", "{}")
+#     input_text = request.args.get("input_text", "")
+#     try:
+#         analysis = json.loads(result_json)
+#     except json.JSONDecodeError:
+#         analysis = {"scam_score": 0, "risk_label": "Unknown", "threat_level": "Unknown", "model_label": "Unknown"}
+    
+#     # Debugging logs
+#     print("DEBUG: Analysis Data Passed to Template:", analysis)
+    
+#     return render_template("results.html", analysis=analysis, input_text=input_text)
+# # Function for sanitizing the analysis data (reuse your existing function)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
