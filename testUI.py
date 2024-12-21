@@ -241,8 +241,8 @@ def calculate_combined_score(text, model_score):
     heuristic_score, heuristic_details, positive_score, positive_details = detect_text_and_domain_issues(text)
 
     # Assign higher weight to heuristics and keyword scores
-    weighted_ml_score = model_score * 0.2  # ML contributes 20%
-    remaining_weight = 1 - 0.2  # Allocate 80% to keyword and heuristic scores
+    weighted_ml_score = model_score * 0.3  # ML contributes 20%
+    remaining_weight = 1 - 0.3  # Allocate 80% to keyword and heuristic scores
 
     # Normalize keyword and heuristic scores
     keyword_weight = keyword_score / (keyword_score + heuristic_score) if (keyword_score + heuristic_score) > 0 else 0.5
@@ -324,11 +324,14 @@ def sanitize_analysis_data(data):
     else:
         return str(data)
 
-
+#  app routes
 @app.route("/")
 def home():
     return render_template("index.html")
 
+# Define the routes for the different analysis methods
+
+# Analyze text
 @app.route("/analyze-text", methods=["GET", "POST"])
 def analyze_text():
     if request.method == "POST":
@@ -341,6 +344,7 @@ def analyze_text():
         return render_template("results.html", analysis=result, input_text=text)
     return render_template("error.html", message="Invalid request method for analyze-text.")
 
+# Analyze image
 @app.route("/analyze-image", methods=["GET", "POST"])
 def analyze_image():
     if request.method == "POST":
@@ -368,6 +372,7 @@ def analyze_image():
             return render_template("error.html", message=f"Error processing image: {e}")
     return render_template("error.html", message="Invalid request method for analyze-image.")
 
+# Analyze PDF
 @app.route("/analyze-pdf", methods=["GET", "POST"])
 def analyze_pdf():
     if request.method == "POST":
@@ -386,6 +391,7 @@ def analyze_pdf():
             return render_template("error.html", message=f"Error processing PDF: {e}")
     return render_template("error.html", message="Invalid request method for analyze-pdf.")
 
+# Analyze link
 @app.route("/analyze-link", methods=["GET", "POST"])
 def analyze_link():
     if request.method == "POST":
@@ -397,6 +403,7 @@ def analyze_link():
         return render_template("results.html", analysis=result, input_text=link)
     return render_template("error.html", message="Invalid request method for analyze-link.")
 
+# Scam Analysis
 @app.route("/scam-analysis", methods=["GET"])
 def scam_analysis():
     result_json = request.args.get("result", "{}")
@@ -420,32 +427,26 @@ def scam_analysis():
         }
     return render_template("scam_analysis.html", analysis=analysis, input_text=input_text, flow=flow)
 
+# What is Scam Score
 @app.route("/what-is-scam-score", methods=["GET"])
 def what_is_scam_score():
     result_json = request.args.get("result", "{}")
     input_text = request.args.get("input_text", "")
-    flow = request.args.get("flow", "/")
+    flow = request.args.get("flow", "/")  # Default to "/" if flow is not provided
+
     try:
         analysis = json.loads(result_json)
         analysis = sanitize_analysis_data(analysis)
     except json.JSONDecodeError:
         analysis = {}
-    return render_template("what_is_scam_score.html", analysis=analysis, input_text=input_text, flow=flow)
 
-# @app.route("/results")
-# def results():
-#     result_json = request.args.get("result", "{}")
-#     input_text = request.args.get("input_text", "")
-#     try:
-#         analysis = json.loads(result_json)
-#     except json.JSONDecodeError:
-#         analysis = {"scam_score": 0, "risk_label": "Unknown", "threat_level": "Unknown", "model_label": "Unknown"}
-    
-#     # Debugging logs
-#     print("DEBUG: Analysis Data Passed to Template:", analysis)
-    
-#     return render_template("results.html", analysis=analysis, input_text=input_text)
-# # Function for sanitizing the analysis data (reuse your existing function)
+    # Ensure flow defaults to "/" if it's None or empty
+    if not flow:
+        flow = "/"
+
+    return render_template(
+        "what_is_scam_score.html", analysis=analysis, input_text=input_text, flow=flow
+    )
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
