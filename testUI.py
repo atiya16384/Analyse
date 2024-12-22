@@ -241,8 +241,8 @@ def calculate_combined_score(text, model_score):
     heuristic_score, heuristic_details, positive_score, positive_details = detect_text_and_domain_issues(text)
 
     # Assign higher weight to heuristics and keyword scores
-    weighted_ml_score = model_score * 0.3  # ML contributes 20%
-    remaining_weight = 1 - 0.3  # Allocate 80% to keyword and heuristic scores
+    weighted_ml_score = model_score * 0.2  # ML contributes 20%
+    remaining_weight = 1 - 0.2  # Allocate 80% to keyword and heuristic scores
 
     # Normalize keyword and heuristic scores
     keyword_weight = keyword_score / (keyword_score + heuristic_score) if (keyword_score + heuristic_score) > 0 else 0.5

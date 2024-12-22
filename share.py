@@ -13,6 +13,7 @@ from PIL import Image, ImageFilter, UnidentifiedImageError
 import magic  # To detect file MIME type
 import cv2
 import numpy as np
+from werkzeug.utils import secure_filename
 import math 
 # Initialize Flask app
 app = Flask(__name__)
@@ -66,7 +67,7 @@ scam_keywords = {
     "identity verification required": 10, "unusual login attempt": 10, "debt relief": 10, "fake invoice": 10,
     "service terminated": 10, "tax refund": 10, "crypto mining": 10, "crypto wallet": 10, "expired" : 10,
 
-    # Low-impact keywords (5 points)
+    # Low-impact keyword/s (5 points)
     "deal": 5, "free": 5, "special discount": 5, "click to claim": 5, "act now": 5, "urgent action required": 5,
     "payment details": 5, "login": 5, "account": 5, "Payment": 5, "secure payment": 5, "pay here": 5,
     "win big": 5, "limited access": 5, "claim €100": 5, "₹500 reward": 5, "₿50 free": 5, "get $100": 5,
@@ -97,85 +98,108 @@ def preprocess_image_for_ocr(temp_path):
 
 def detect_text_and_domain_issues(text):
     """
-    Analyze text for spelling, grammar, and phishing domains.
+    Analyze text for spelling, grammar, phishing domains, and both positive and negative traits.
     """
     blob = TextBlob(text)
     errors = 0
+    positive_score = 0
     details = []
+    positive_details = []
 
     # Check spelling and grammar
-    for word in blob.words:
-        if word.lower() != word.correct().lower():
-            errors += 1
+    misspelled_words = [word for word in blob.words if word.lower() != word.correct().lower()]
+    if not misspelled_words:
+        positive_score += 2  # Reduced impact
+        positive_details.append("No spelling or grammar issues detected.")
+    else:
+        for word in misspelled_words:
+            errors += 10  # Increased impact of errors
             details.append(f"Misspelled word: {word}")
 
     # Extract domains/URLs from text
     domains = re.findall(r'\b(?:https?://)?(?:www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b', text)
 
+    if not domains:
+        positive_score += 5  # Reduced impact
+        positive_details.append("No suspicious domains or URLs detected.")
+
     for domain in domains:
         # Suspicious TLDs
         if re.search(r'\.(xyz|info|buzz|click|top|online|icu|club|zip|ru|tk|ml|ga|cf|gq|pw)$', domain):
-            errors += 10  # Heavily penalize suspicious TLDs
+            errors += 15
             details.append(f"Suspicious TLD detected: {domain}")
+        else:
+            positive_score += 5 # Further reduced impact
+            positive_details.append(f"Legitimate-looking domain detected: {domain}")
 
         # Subdomain-heavy domains
         if len(domain.split('.')) > 3:
-            errors += 8
+            errors += 10
             details.append(f"Suspicious subdomain structure: {domain}")
+        else:
+            positive_score += 5  # Minimal impact
+            positive_details.append(f"Domain has a simple structure: {domain}")
 
-        # Numeric domains
-        if any(char.isdigit() for char in domain.split('.')[0]):
-            errors += 8
-            details.append(f"Numeric domain detected: {domain}")
-
-        # High entropy domains
-        entropy = calculate_entropy(domain)
-        if entropy > 4.0:
-            errors += 8
-            details.append(f"High entropy domain detected: {domain}")
-
-        # Legitimate domain spoofing
+        # Check for legitimate domain spoofing
         spoofing_issue = detect_legitimate_domain_spoofing(domain)
         if spoofing_issue:
-            errors += 15  # Significantly penalize spoofing legitimate domains
+            errors += 15
             details.append(spoofing_issue)
+        else:
+            positive_score += 5  # Minimal impact
+            positive_details.append(f"No spoofing detected for domain: {domain}")
 
-        # Check for IP-based domains
-        if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', domain):
-            errors += 10
+    # Check for IP-based domains
+    ip_based_domains = [domain for domain in domains if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', domain)]
+    if not ip_based_domains:
+        positive_score += 5  # Minimal impact
+        positive_details.append("No IP-based domains detected.")
+    else:
+        for domain in ip_based_domains:
+            errors += 15
             details.append(f"IP-based domain detected: {domain}")
 
-        # Detect shortened URLs
-        if re.search(r'\b(bit\.ly|tinyurl|t\.co|goo\.gl|ow\.ly|is\.gd|rb\.gy)\b', domain):
-            errors += 10
-            details.append(f"Shortened URL detected: {domain}")
+    # Check for absence of shortened URLs
+    if not re.search(r'\b(bit\.ly|tinyurl|t\.co|goo\.gl|ow\.ly|is\.gd|rb\.gy)\b', text):
+        positive_score += 5  # Minimal impact
+        positive_details.append("No shortened URLs detected.")
+    else:
+        errors += 15
+        details.append("Shortened URL detected.")
 
     # Check 'From' and 'Reply-To' headers
     headers = re.findall(r'From:.*?<(.*?)>', text)
+    if not headers:
+        positive_score += 5  # Minimal impact
+        positive_details.append("No suspicious 'From' or 'Reply-To' headers detected.")
     for header in headers:
         if not any(domain in header for domain in legitimate_domains):
-            errors += 15  # Heavily penalize mismatched headers
+            errors += 15
             details.append(f"Suspicious 'From' header: {header}")
+        else:
+            positive_score += 1  # Minimal impact
+            positive_details.append(f"Valid 'From' header detected: {header}")
 
-    # Calculate keyword density
-    if blob.words:
-        keyword_density = sum(
-            1 for keyword in scam_keywords if keyword.lower() in text.lower()
-        ) / len(blob.words)
-        if keyword_density > 0.1:
-            errors += int(keyword_density * 80)  # Higher scaling for density
-            details.append(f"High keyword density detected: {keyword_density:.2f}")
+    # Check for suspicious keywords
+    keyword_density = sum(1 for keyword in scam_keywords if keyword.lower() in text.lower()) / (len(blob.words) + 1)
+    if keyword_density < 0.05:
+        positive_score += 2  # Minimal impact
+        positive_details.append("Low keyword density suggests legitimate content.")
+    else:
+        errors += int(keyword_density * 80)
+        details.append(f"High keyword density detected: {keyword_density:.2f}")
 
-    # # Apply multiplier if multiple indicators are present
-    # if len(details) > 5:  # More than 5 phishing indicators
-    #     errors *= 1.8  # Increase score by 80%
+    # No phishing indicators
+    if errors == 0:
+        positive_score += 2  # Minimal impact
+        positive_details.append("No phishing indicators detected in text.")
 
     # Calculate overall score
     total_words = len(blob.words) if len(blob.words) > 0 else 1
     error_ratio = errors / total_words
-    score = int(min(error_ratio * 100, 100))  # Cap score at 100%
+    score = int(min(error_ratio * 100, 100))  # Cap negative score at 100%
 
-    return score, details
+    return score, details, positive_score, positive_details
 
 # Function to check for legitimate domain spoofing
 def detect_legitimate_domain_spoofing(domain):
@@ -193,103 +217,141 @@ def calculate_entropy(string):
     entropy = -sum(p * math.log2(p) for p in probabilities)
     return entropy
 
-def analyze_keywords(text):
+# Updated analyze_text_with_model function
+def analyze_text_with_model(text):
+    """
+    Analyzes the input text for scam detection using the ML model and heuristic-based methods.
+    """
+    try:
+        # Tokenize and pad input
+        sequences = tokenizer.texts_to_sequences([text])
+        padded_sequences = pad_sequences(sequences, maxlen=100, padding="post", truncating="post")
 
+        # ML model prediction
+        prediction = model.predict(padded_sequences)[0][0]
+        model_score = round(prediction * 100, 2)
+
+        # Combine scores
+        result = calculate_combined_score(text, model_score)
+
+        # Log important debugging information
+        print("\n--- DEBUG INFO ---")
+        print(f"Input Text: {text}")
+        print(f"Model Prediction Score: {model_score}")
+        print(f"Combined Scam Score: {result.get('scam_score', 0)}")
+        print(f"Threat Level: {result.get('threat_level', 'Green')}")
+        print(f"Details: {result.get('details', [])}")
+        print(f"Positive Indicators: {result.get('positive_details', [])}\n")
+
+        return {
+            "model_label": "scam" if model_score > 50 else "not scam",
+            "model_confidence": model_score,
+            "scam_score": float(result.get("scam_score", 0)),
+            "heuristic_scam_score": float(result.get("heuristic_score", 0)),
+            "positive_score": float(result.get("positive_score", 0)),
+            "threat_level": result.get("threat_level", "Green"),
+            "risk_label": result.get("risk_label", "Low Risk"),
+            "classification": result.get("classification", "not scam"),
+            "details": result.get("details", []),
+            "positive_details": result.get("positive_details", []),
+        }
+    except Exception as e:
+        print(f"Error in analyze_text_with_model: {e}")
+        return {
+            "error": "Failed to analyze the text. Please check the input and model configuration."
+        }
+
+# Improved calculate_combined_score function
+def calculate_combined_score(text, model_score):
+    """
+    Combines ML model confidence, scam keyword scores, and heuristic scores
+    with proper normalization and weighting.
+    """
+    try:
+        # Analyze scam keywords
+        keyword_score, keyword_details = analyze_keywords(text)
+
+        # Analyze domain and text issues (including positives)
+        heuristic_score, heuristic_details, positive_score, positive_details = detect_text_and_domain_issues(text)
+
+        # Assign weights
+        weighted_ml_score = model_score * 0.2  # ML contributes 20%
+        remaining_weight = 1 - 0.2  # Allocate 80% to keyword and heuristic scores
+
+        # Normalize keyword and heuristic scores
+        total_heuristic_keywords = keyword_score + heuristic_score
+        keyword_weight = keyword_score / total_heuristic_keywords if total_heuristic_keywords > 0 else 0.5
+        heuristic_weight = 1 - keyword_weight
+
+        # Limit positive impact
+        max_positive_impact = heuristic_score * 0.25  # Positive indicators reduce score by up to 25%
+        adjusted_heuristic_score = max(0, heuristic_score - min(positive_score, max_positive_impact))
+
+        # Calculate weighted scores
+        weighted_keyword_score = keyword_score * remaining_weight * keyword_weight
+        weighted_heuristic_score = adjusted_heuristic_score * remaining_weight * heuristic_weight
+
+        # Final score calculation
+        total_score = min(weighted_ml_score + weighted_keyword_score + weighted_heuristic_score, 100)
+
+        # Threat level assignment
+        if total_score > 70:
+            threat_level = "Red"
+            risk_label = "High Risk"
+        elif total_score > 35:
+            threat_level = "Yellow"
+            risk_label = "Medium Risk"
+        else:
+            threat_level = "Green"
+            risk_label = "Low Risk"
+
+        return {
+            "scam_score": float(total_score),
+            "threat_level": threat_level,
+            "risk_label": risk_label,
+            "details": keyword_details + heuristic_details,
+            "positive_details": positive_details,
+        }
+    except Exception as e:
+        print(f"Error in calculate_combined_score: {e}")
+        return {
+            "scam_score": 0,
+            "threat_level": "Green",
+            "risk_label": "Low Risk",
+            "details": [],
+            "positive_details": [],
+        }
+
+# Enhanced analyze_keywords function
+def analyze_keywords(text):
+    """
+    Analyzes the text for scam-related keywords and calculates a score based on their weight.
+    """
     score = 0
     details = []
 
     for keyword, weight in scam_keywords.items():
         if keyword.lower() in text.lower():
             score += weight
-            details.append(f"Keyword detected: {keyword}")
+            details.append(f"Keyword detected: {keyword} ({weight} points)")
 
     return score, details
 
-def calculate_combined_score(text, model_score):
-    """
-    Combine ML model confidence score, scam keywords, and domain/text heuristic-based scores.
-    """
-    # Analyze scam keywords
-    keyword_score, keyword_details = analyze_keywords(text)
 
-    # Analyze domain and text issues
-    heuristic_score, heuristic_details = detect_text_and_domain_issues(text)
-
-    # Assign higher weight to heuristics and keyword scores
-    weighted_ml_score = model_score * 0.05  # Reduce ML weight to 5%
-    remaining_weight = 1 - 0.05  # Allocate 95% to keyword and heuristic scores
-
-    # Normalize keyword and heuristic scores
-    keyword_weight = keyword_score / (keyword_score + heuristic_score) if (keyword_score + heuristic_score) > 0 else 0.5
-    heuristic_weight = 1 - keyword_weight
-
-    weighted_keyword_score = keyword_score * remaining_weight * keyword_weight
-    weighted_heuristic_score = heuristic_score * remaining_weight * heuristic_weight
-
-    # Combine scores (capped at 100)
-    total_score = min(weighted_ml_score + weighted_keyword_score + weighted_heuristic_score, 100)
-
-    # Assign threat levels
-    if total_score > 70:
-        threat_level = "Red"
-        risk_label = "High Risk"
-    elif total_score > 35:
-        threat_level = "Yellow"
-        risk_label = "Medium Risk"
+# Helper function to sanitize data
+def sanitize_analysis_data(data):
+    if isinstance(data, dict):
+        return {k: sanitize_analysis_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_analysis_data(v) for v in data]
+    elif isinstance(data, (int, float, str, bool)) or data is None:
+        return data
+    elif isinstance(data, (np.float32, np.float64)):  # Handle NumPy float types
+        return float(data)
+    elif isinstance(data, (np.int32, np.int64)):  # Handle NumPy integer types
+        return int(data)
     else:
-        threat_level = "Green"
-        risk_label = "Low Risk"
-
-    return {
-        "scam_score": total_score,
-        "threat_level": threat_level,
-        "risk_label": risk_label,
-        "details": keyword_details + heuristic_details,
-    }
-
-
-def analyze_text_with_model(text):
-    """
-    Analyze text using ML model, keywords, and heuristics.
-    """
-    # Tokenize and pad input
-    sequences = tokenizer.texts_to_sequences([text])
-    padded_sequences = pad_sequences(sequences, maxlen=100, padding="post", truncating="post")
-
-    # ML model prediction
-    prediction = model.predict(padded_sequences)[0][0]
-    model_score = round(prediction * 100, 2)
-
-    # Heuristic-based analysis
-    heuristic_score, heuristic_details = detect_text_and_domain_issues(text)
-
-    # Combine scores
-    combined_score = max(model_score, heuristic_score)  # Use the higher score for final classification
-
-    # Override classification if heuristic score is high
-    if combined_score > 70:
-        final_classification = "scam"
-        risk_label = "High Risk"
-        threat_level = "Red"
-    elif combined_score > 50:
-        final_classification = "potential scam"
-        risk_label = "Medium Risk"
-        threat_level = "Yellow"
-    else:
-        final_classification = "not scam"
-        risk_label = "Low Risk"
-        threat_level = "Green"
-
-    return {
-        "model_label": "scam" if model_score > 50 else "not scam",
-        "model_confidence": model_score,
-        "scam_score": combined_score,
-        "threat_level": threat_level,
-        "risk_label": risk_label,
-        "classification": final_classification,
-        "details": heuristic_details,
-    }
-
+        return str(data)
 
 # Flask routes
 @app.route("/")
