@@ -74,3 +74,4 @@ print("\nClassification Report:\n", classification_report(y_test, y_pred))
 # Optional: Save the Model
 model.save("optimized_scam_detection_model.keras")
 # Save the tokenizer
+
