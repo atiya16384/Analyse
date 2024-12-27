@@ -1,4 +1,0 @@
-2024/12/18-02:38:03.084 8507 Reusing MANIFEST /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_data/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2024/12/18-02:38:03.084 8507 Recovering log #79
-2024/12/18-02:38:03.087 8507 Reusing old log /Users/atiyamahboob/Documents/ML_Algorithm_Cyber/chrome_data/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000079.log 
-2024/12/18-02:38:03.138 f703 Manual compaction at level-0 from '\x00\x1e\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1f\x00\x00\x00' @ 0 : 0; will stop at (end)
